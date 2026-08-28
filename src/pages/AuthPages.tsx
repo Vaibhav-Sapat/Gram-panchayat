@@ -3,7 +3,7 @@ import type { Lang } from '../i18n/translations';
 import { store } from '../data/store';
 import type { User } from '../types';
 import { Card, FormField, Input, Button } from '../components/shared';
-import { ADMIN_EMAIL, auth, db } from '../firebase';
+import { ADMIN_EMAIL, auth, db, isFirebaseConfigured } from '../firebase';
 import { createUserWithEmailAndPassword, GoogleAuthProvider, sendEmailVerification, signInWithRedirect, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
@@ -32,6 +32,10 @@ export function LoginPage({ language, onNavigate, onLogin, showToast }: LoginPag
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
+    if (!isFirebaseConfigured) {
+      showToast('Authentication is not configured yet. Please contact the administrator.', 'error');
+      return;
+    }
     setLoading(true);
     try {
       const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
@@ -77,6 +81,10 @@ export function LoginPage({ language, onNavigate, onLogin, showToast }: LoginPag
   };
 
   const handleGoogleSignIn = async () => {
+    if (!isFirebaseConfigured) {
+      showToast('Google sign-in is not configured yet. Please contact the administrator.', 'error');
+      return;
+    }
     setLoading(true);
     setErrors({});
     try {
@@ -179,6 +187,11 @@ export function RegisterPage({ language, onNavigate, onLogin, showToast }: Regis
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
+
+    if (!isFirebaseConfigured) {
+      showToast('Authentication is not configured yet. Please contact the administrator.', 'error');
+      return;
+    }
 
     const existing = store.getUserByEmail(form.email);
     if (existing) { setErrors({ email: 'An account with this email already exists.' }); return; }
