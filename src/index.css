@@ -1,0 +1,92 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+@import 'tailwindcss';
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
+  --font-sans: 'Noto Sans', system-ui, sans-serif;
+  --font-display: 'Poppins', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+:root {
+  --background: #f5f7fa;
+  --foreground: #1a2340;
+  --card: #ffffff;
+  --card-foreground: #1a2340;
+  --primary: #1b3a6b;
+  --primary-foreground: #ffffff;
+  --secondary: #e8edf5;
+  --secondary-foreground: #1b3a6b;
+  --muted: #eef1f6;
+  --muted-foreground: #6b7898;
+  --accent: #e85e00;
+  --accent-foreground: #ffffff;
+  --border: #dce3ef;
+  --ring: #1b3a6b;
+  --radius: 8px;
+  --green: #16a34a;
+  --green-bg: #dcfce7;
+  --yellow: #d97706;
+  --yellow-bg: #fef3c7;
+  --red: #dc2626;
+  --red-bg: #fee2e2;
+  --blue: #2563eb;
+  --blue-bg: #dbeafe;
+  --purple: #7c3aed;
+  --purple-bg: #ede9fe;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--background);
+  color: var(--foreground);
+  line-height: 1.6;
+  margin: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #c5cedf; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #9aa7c0; }
+
+/* Scrollbar hide utility */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Input base */
+input, select, textarea {
+  font-family: var(--font-sans);
+}
+
+/* Focus ring */
+.focus-ring:focus {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}

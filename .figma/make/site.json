@@ -1,0 +1,10 @@
+{
+  "description": "Streamline the application process for birth and death certificates, enabling citizens to apply online, track progress, and receive notifications efficiently.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
