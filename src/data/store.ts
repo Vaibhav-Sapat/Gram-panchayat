@@ -8,7 +8,7 @@ import type {
   StatusHistoryEntry,
   ApplicationStatus,
 } from '../types';
-import { db } from '../firebase';
+import { db, isFirebaseConfigured } from '../firebase';
 import { collection, doc, getDocs, setDoc } from 'firebase/firestore';
 
 // Simple in-memory store with localStorage persistence
@@ -266,6 +266,7 @@ function withoutUndefined(value: unknown): unknown {
 }
 
 async function persistStoreData() {
+  if (!isFirebaseConfigured) return;
   try {
     await Promise.all(collectionNames.flatMap(name =>
       storeData[name].map(item => setDoc(doc(db, name, item.id), withoutUndefined(item) as Record<string, unknown>)),
@@ -276,6 +277,7 @@ async function persistStoreData() {
 }
 
 export async function initializeStore() {
+  if (!isFirebaseConfigured) return;
   try {
     const snapshots = await Promise.all(collectionNames.map(name => getDocs(collection(db, name))));
     const hasRemoteData = snapshots.some(snapshot => !snapshot.empty);

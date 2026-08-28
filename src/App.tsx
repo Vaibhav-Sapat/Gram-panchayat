@@ -14,7 +14,7 @@ import StaffDashboard from './pages/StaffDashboard';
 import StaffReview from './pages/StaffReview';
 import AdminPanel from './pages/AdminPanel';
 import { initializeStore, store } from './data/store';
-import { auth, db } from './firebase';
+import { auth, db, isFirebaseConfigured } from './firebase';
 import { getRedirectResult } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
@@ -101,6 +101,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (!isFirebaseConfigured) return;
     void getRedirectResult(auth).then(async credential => {
       if (!credential) return;
       const profileRef = doc(db, 'users', credential.user.uid);
