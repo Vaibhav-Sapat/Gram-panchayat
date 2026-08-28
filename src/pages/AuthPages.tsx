@@ -4,7 +4,7 @@ import { store } from '../data/store';
 import type { User } from '../types';
 import { Card, FormField, Input, Button } from '../components/shared';
 import { ADMIN_EMAIL, auth, db } from '../firebase';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, sendEmailVerification, signInWithRedirect, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 interface LoginPageProps {
@@ -35,6 +35,12 @@ export function LoginPage({ language, onNavigate, onLogin, showToast }: LoginPag
     setLoading(true);
     try {
       const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
+      if (!credential.user.emailVerified) {
+        await sendEmailVerification(credential.user);
+        await signOut(auth);
+        showToast('Please verify your email using the link we sent before signing in.', 'warning');
+        return;
+      }
       const profile = await getDoc(doc(db, 'users', credential.user.uid));
       const data = profile.data();
       const user: User = data ? {
@@ -180,6 +186,8 @@ export function RegisterPage({ language, onNavigate, onLogin, showToast }: Regis
     setLoading(true);
     try {
       const credential = await createUserWithEmailAndPassword(auth, form.email.trim(), form.password);
+      await sendEmailVerification(credential.user);
+      await signOut(auth);
       const user = store.registerUser(form.name, form.mobile, form.email.trim(), '', credential.user.uid);
       await setDoc(doc(db, 'users', credential.user.uid), {
         id: user.id,
@@ -191,8 +199,7 @@ export function RegisterPage({ language, onNavigate, onLogin, showToast }: Regis
         isActive: user.isActive,
       });
       store.addAuditLog({ userId: user.id, userName: user.name, action: 'USER_REGISTER', timestamp: new Date().toISOString(), details: 'New citizen registered' });
-      onLogin(user);
-      showToast('Registration successful! Welcome to the portal.', 'success');
+      showToast('Registration successful. Check your email and verify your address before signing in.', 'success');
     } catch {
       showToast('Registration failed. Check Firebase Authentication and try again.', 'error');
     } finally {
