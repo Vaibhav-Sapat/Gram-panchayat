@@ -3,6 +3,7 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 export const isFirebaseConfigured = Boolean(import.meta.env.VITE_FIREBASE_API_KEY && import.meta.env.VITE_FIREBASE_PROJECT_ID);
+export const ADMIN_EMAIL = 'vaibhavsapat9923@gmail.com';
 const app = isFirebaseConfigured
   ? initializeApp({
       apiKey: import.meta.env.VITE_FIREBASE_API_KEY,

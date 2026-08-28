@@ -3,7 +3,7 @@ import type { Lang } from '../i18n/translations';
 import { store } from '../data/store';
 import type { User } from '../types';
 import { Card, FormField, Input, Button } from '../components/shared';
-import { auth, db } from '../firebase';
+import { ADMIN_EMAIL, auth, db } from '../firebase';
 import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
@@ -43,7 +43,7 @@ export function LoginPage({ language, onNavigate, onLogin, showToast }: LoginPag
         mobile: data.mobile || '',
         email: credential.user.email || email,
         passwordHash: '',
-        role: data.role || 'citizen',
+        role: credential.user.email?.toLowerCase() === ADMIN_EMAIL ? 'admin' : 'citizen',
         createdAt: data.createdAt || new Date().toISOString(),
         isActive: data.isActive !== false,
       } : {
@@ -52,7 +52,7 @@ export function LoginPage({ language, onNavigate, onLogin, showToast }: LoginPag
         mobile: '',
         email: credential.user.email || email,
         passwordHash: '',
-        role: 'citizen',
+        role: credential.user.email?.toLowerCase() === ADMIN_EMAIL ? 'admin' : 'citizen',
         createdAt: new Date().toISOString(),
         isActive: true,
       };
@@ -64,13 +64,7 @@ export function LoginPage({ language, onNavigate, onLogin, showToast }: LoginPag
         showToast('This account is inactive.', 'error');
       }
     } catch {
-      const demoUser = store.authenticateUser(email, password);
-      if (demoUser) {
-        onLogin(demoUser);
-        showToast(`Welcome back, ${demoUser.name}!`, 'success');
-      } else {
-        showToast('Invalid email or password.', 'error');
-      }
+      showToast('Invalid email or password.', 'error');
     } finally {
       setLoading(false);
     }
@@ -87,12 +81,6 @@ export function LoginPage({ language, onNavigate, onLogin, showToast }: LoginPag
     }
   };
 
-  const demoAccounts = [
-    { label: 'Citizen', email: 'citizen@demo.local', password: 'demo123', color: 'var(--primary)' },
-    { label: 'Staff', email: 'staff@demo.local', password: 'demo123', color: '#7c3aed' },
-    { label: 'Admin', email: 'admin@demo.local', password: 'demo123', color: '#b45309' },
-  ];
-
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center p-4 py-12">
       <div className="w-full max-w-md">
@@ -105,23 +93,6 @@ export function LoginPage({ language, onNavigate, onLogin, showToast }: LoginPag
           </div>
           <h1 className="font-display text-2xl font-bold text-[var(--foreground)]">Sign In</h1>
           <p className="text-sm text-[var(--muted-foreground)] mt-1">Access your Gram Panchayat Portal account</p>
-        </div>
-
-        {/* Demo accounts */}
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-          <p className="text-xs font-semibold text-amber-800 mb-2">Demo Accounts (password: demo123)</p>
-          <div className="flex flex-wrap gap-2">
-            {demoAccounts.map(acc => (
-              <button
-                key={acc.email}
-                onClick={() => { setEmail(acc.email); setPassword(acc.password); setErrors({}); }}
-                className="text-xs px-3 py-1.5 rounded-lg font-semibold text-white transition-opacity hover:opacity-80"
-                style={{ background: acc.color }}
-              >
-                {acc.label}
-              </button>
-            ))}
-          </div>
         </div>
 
         <Card className="p-6">
@@ -191,6 +162,7 @@ export function RegisterPage({ language, onNavigate, onLogin, showToast }: Regis
     else if (!/^[6-9]\d{9}$/.test(form.mobile)) e.mobile = 'Invalid mobile number. Must be 10 digits starting with 6-9.';
     if (!form.email.trim()) e.email = 'Please enter your email address.';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Invalid email address.';
+    else if (form.email.trim().toLowerCase() === ADMIN_EMAIL) e.email = 'This email is reserved for the administrator.';
     if (!form.password) e.password = 'Please enter a password.';
     else if (form.password.length < 6) e.password = 'Password must be at least 6 characters.';
     if (form.password !== form.confirmPassword) e.confirmPassword = 'Passwords do not match.';

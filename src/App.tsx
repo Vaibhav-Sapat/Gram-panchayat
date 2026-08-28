@@ -14,7 +14,7 @@ import StaffDashboard from './pages/StaffDashboard';
 import StaffReview from './pages/StaffReview';
 import AdminPanel from './pages/AdminPanel';
 import { initializeStore, store } from './data/store';
-import { auth, db, isFirebaseConfigured } from './firebase';
+import { ADMIN_EMAIL, auth, db, isFirebaseConfigured } from './firebase';
 import { getRedirectResult } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
@@ -113,7 +113,7 @@ export default function App() {
         mobile: data?.mobile || '',
         email: credential.user.email || '',
         passwordHash: '',
-        role: data?.role || 'citizen',
+        role: credential.user.email?.toLowerCase() === ADMIN_EMAIL ? 'admin' : 'citizen',
         createdAt: data?.createdAt || new Date().toISOString(),
         isActive: data?.isActive !== false,
       };
