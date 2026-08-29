@@ -4,7 +4,7 @@ import { store } from '../data/store';
 import type { User } from '../types';
 import { Card, FormField, Input, Button } from '../components/shared';
 import { ADMIN_EMAIL, auth, db, isFirebaseConfigured } from '../firebase';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, sendEmailVerification, sendPasswordResetEmail, signInWithRedirect, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, sendEmailVerification, sendPasswordResetEmail, signInWithPopup, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 interface LoginPageProps {
@@ -32,12 +32,22 @@ export function LoginPage({ language, onNavigate, onLogin, showToast }: LoginPag
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
-    if (!isFirebaseConfigured) {
-      showToast('Authentication is not configured yet. Please contact the administrator.', 'error');
-      return;
-    }
+
     setLoading(true);
     try {
+      if (!isFirebaseConfigured) {
+        const user = store.authenticateUser(email.trim(), password);
+        if (!user) {
+          showToast('Invalid email or password.', 'error');
+          return;
+        }
+
+        store.addAuditLog({ userId: user.id, userName: user.name, action: 'USER_LOGIN', timestamp: new Date().toISOString(), details: 'User logged in' });
+        onLogin(user);
+        showToast(`Welcome back, ${user.name}!`, 'success');
+        return;
+      }
+
       const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
       if (!credential.user.emailVerified) {
         await sendEmailVerification(credential.user);
@@ -82,15 +92,41 @@ export function LoginPage({ language, onNavigate, onLogin, showToast }: LoginPag
 
   const handleGoogleSignIn = async () => {
     if (!isFirebaseConfigured) {
-      showToast('Google sign-in is not configured yet. Please contact the administrator.', 'error');
+      showToast('Google sign-in is not configured in demo mode. Use the local demo accounts instead.', 'info');
       return;
     }
     setLoading(true);
     setErrors({});
     try {
-      await signInWithRedirect(auth, new GoogleAuthProvider());
-    } catch {
-      showToast('Google sign-in was cancelled or failed. Please try again.', 'error');
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const credential = await signInWithPopup(auth, provider);
+      const profileRef = doc(db, 'users', credential.user.uid);
+      const profile = await getDoc(profileRef);
+      const data = profile.data();
+      const user: User = {
+        id: credential.user.uid,
+        name: data?.name || data?.fullName || credential.user.displayName || credential.user.email || 'Google User',
+        mobile: data?.mobile || '',
+        email: credential.user.email || '',
+        passwordHash: '',
+        role: credential.user.email?.toLowerCase() === ADMIN_EMAIL ? 'admin' : 'citizen',
+        createdAt: data?.createdAt || new Date().toISOString(),
+        isActive: data?.isActive !== false,
+      };
+      if (!user.isActive) {
+        showToast('This account is inactive.', 'error');
+        return;
+      }
+      await setDoc(profileRef, { ...user, passwordHash: undefined }, { merge: true });
+      store.addAuditLog({ userId: user.id, userName: user.name, action: 'USER_LOGIN', timestamp: new Date().toISOString(), details: 'Signed in with Google' });
+      onLogin(user);
+      showToast(`Welcome back, ${user.name}!`, 'success');
+    } catch (error: unknown) {
+      console.error('Google sign-in failed:', error);
+      const message = error instanceof Error ? error.message : 'Google sign-in was cancelled or failed. Please try again.';
+      showToast(`Google sign-in failed: ${message}`, 'error');
+    } finally {
       setLoading(false);
     }
   };
@@ -177,7 +213,13 @@ export function ForgotPasswordPage({ onNavigate, showToast }: Pick<LoginPageProp
       return;
     }
     if (!isFirebaseConfigured) {
-      showToast('Authentication is not configured yet. Please contact the administrator.', 'error');
+      const user = store.getUserByEmail(trimmedEmail);
+      if (user) {
+        setSent(true);
+        showToast('Demo mode: use your local account credentials to sign in. Firebase email reset is unavailable.', 'info');
+      } else {
+        setError('No account was found for this email address.');
+      }
       return;
     }
 
@@ -271,16 +313,19 @@ export function RegisterPage({ language, onNavigate, onLogin, showToast }: Regis
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
-    if (!isFirebaseConfigured) {
-      showToast('Authentication is not configured yet. Please contact the administrator.', 'error');
-      return;
-    }
-
     const existing = store.getUserByEmail(form.email);
     if (existing) { setErrors({ email: 'An account with this email already exists.' }); return; }
 
     setLoading(true);
     try {
+      if (!isFirebaseConfigured) {
+        const user = store.registerUser(form.name, form.mobile, form.email.trim(), form.password);
+        store.addAuditLog({ userId: user.id, userName: user.name, action: 'USER_REGISTER', timestamp: new Date().toISOString(), details: 'New citizen registered in demo mode' });
+        onLogin(user);
+        showToast('Registration successful. You are now signed in in demo mode.', 'success');
+        return;
+      }
+
       const credential = await createUserWithEmailAndPassword(auth, form.email.trim(), form.password);
       await sendEmailVerification(credential.user);
       await signOut(auth);
