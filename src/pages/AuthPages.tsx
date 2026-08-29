@@ -4,7 +4,7 @@ import { store } from '../data/store';
 import type { User } from '../types';
 import { Card, FormField, Input, Button } from '../components/shared';
 import { ADMIN_EMAIL, auth, db, isFirebaseConfigured } from '../firebase';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, sendEmailVerification, signInWithRedirect, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, sendEmailVerification, sendPasswordResetEmail, signInWithRedirect, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 interface LoginPageProps {
@@ -117,6 +117,11 @@ export function LoginPage({ language, onNavigate, onLogin, showToast }: LoginPag
             <FormField label="Password" error={errors.password} required>
               <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
             </FormField>
+            <div className="-mt-2 text-right">
+              <button type="button" onClick={() => onNavigate('forgot-password')} className="text-sm text-[var(--primary)] font-semibold hover:underline">
+                Forgot password?
+              </button>
+            </div>
             <Button type="submit" disabled={loading} className="w-full mt-2">
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
@@ -148,6 +153,84 @@ export function LoginPage({ language, onNavigate, onLogin, showToast }: LoginPag
         </p>
         <p className="text-center mt-3">
           <button onClick={() => onNavigate('home')} className="text-xs text-[var(--muted-foreground)] hover:underline">← Back to Home</button>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export function ForgotPasswordPage({ onNavigate, showToast }: Pick<LoginPageProps, 'onNavigate' | 'showToast'>) {
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setError('Please enter your email address.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError('Invalid email address.');
+      return;
+    }
+    if (!isFirebaseConfigured) {
+      showToast('Authentication is not configured yet. Please contact the administrator.', 'error');
+      return;
+    }
+
+    setError('');
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, trimmedEmail);
+      setSent(true);
+      showToast('Password reset email sent. Check your inbox for the secure reset link.', 'success');
+    } catch {
+      setError('We could not send the reset email. Check the address and try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center p-4 py-12">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="w-14 h-14 mx-auto bg-[var(--primary)] rounded-2xl flex items-center justify-center mb-4">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" aria-hidden="true">
+              <path d="M4 4h16v16H4z" />
+              <path d="m4 7 8 6 8-6" />
+            </svg>
+          </div>
+          <h1 className="font-display text-2xl font-bold text-[var(--foreground)]">Reset Password</h1>
+          <p className="text-sm text-[var(--muted-foreground)] mt-1">We will email you a secure link to choose a new password.</p>
+        </div>
+
+        <Card className="p-6">
+          {sent ? (
+            <div className="text-center space-y-4">
+              <div className="rounded-lg bg-green-50 border border-green-200 p-4 text-sm text-green-800">
+                Check your inbox for the password reset link. The link may take a few minutes to arrive.
+              </div>
+              <Button type="button" onClick={() => onNavigate('login')} className="w-full">Return to Sign In</Button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <FormField label="Email Address" error={error} required>
+                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" />
+              </FormField>
+              <Button type="submit" disabled={loading} className="w-full mt-2">
+                {loading ? 'Sending link...' : 'Send Reset Link'}
+              </Button>
+            </form>
+          )}
+        </Card>
+
+        <p className="text-center text-sm text-[var(--muted-foreground)] mt-4">
+          Remember your password?{' '}
+          <button onClick={() => onNavigate('login')} className="text-[var(--primary)] font-semibold hover:underline">Sign in</button>
         </p>
       </div>
     </div>

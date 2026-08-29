@@ -4,7 +4,7 @@ import type { Lang } from './i18n/translations';
 import { Toast } from './components/shared';
 import Header from './components/Header';
 import HomePage from './pages/HomePage';
-import { LoginPage, RegisterPage } from './pages/AuthPages';
+import { ForgotPasswordPage, LoginPage, RegisterPage } from './pages/AuthPages';
 import CitizenDashboard from './pages/CitizenDashboard';
 import BirthApplication from './pages/BirthApplication';
 import DeathApplication from './pages/DeathApplication';
@@ -154,6 +154,9 @@ export default function App() {
 
       case 'login':
         return <LoginPage language={language} onNavigate={navigate} onLogin={handleLogin} showToast={showToast} />;
+
+      case 'forgot-password':
+        return <ForgotPasswordPage onNavigate={navigate} showToast={showToast} />;
 
       case 'register':
         return <RegisterPage language={language} onNavigate={navigate} onLogin={handleLogin} showToast={showToast} />;
